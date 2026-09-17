@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Env
+.env
+.env.local
+
+# Data
+data-pipeline/raw_data/
+*.csv
+!sample_data.csv
+
+# IDE
+.vscode/
+.idea/
