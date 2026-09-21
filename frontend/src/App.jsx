@@ -1,122 +1,79 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { getAssets, getMarketData, getForecast, getRisk, getSentiment, getExplanation } from './api';
+import MarketOverview from './components/MarketOverview';
+import PriceChart from './components/PriceChart';
+import ForecastCard from './components/ForecastCard';
+import RiskPanel from './components/RiskPanel';
+import SentimentPanel from './components/SentimentPanel';
+import ExplainabilityPanel from './components/ExplainabilityPanel';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [symbols, setSymbols] = useState([]);
+  const [selectedSymbol, setSelectedSymbol] = useState('AAPL');
+  const [marketData, setMarketData] = useState(null);
+  const [forecast, setForecast] = useState(null);
+  const [risk, setRisk] = useState(null);
+  const [sentiment, setSentiment] = useState(null);
+  const [explanation, setExplanation] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    getAssets().then(data => setSymbols(data.symbols)).catch(err => setError(err.message));
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    Promise.all([
+      getMarketData(selectedSymbol),
+      getForecast(selectedSymbol),
+      getRisk(selectedSymbol),
+      getSentiment(selectedSymbol),
+      getExplanation(selectedSymbol),
+    ])
+      .then(([marketRes, forecastRes, riskRes, sentimentRes, explanationRes]) => {
+        setMarketData(marketRes);
+        setForecast(forecastRes);
+        setRisk(riskRes);
+        setSentiment(sentimentRes);
+        setExplanation(explanationRes);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [selectedSymbol]);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app">
+      <header className="header">
+        <h1>Nova <span className="subtitle">Financial ML Dashboard</span></h1>
+        <select value={selectedSymbol} onChange={(e) => setSelectedSymbol(e.target.value)}>
+          {symbols.map(sym => (
+            <option key={sym} value={sym}>{sym}</option>
+          ))}
+        </select>
+      </header>
 
-      <div className="ticks"></div>
+      {error && <div className="error">Error: {error}</div>}
+      {loading && <div className="loading">Loading {selectedSymbol}...</div>}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {!loading && !error && (
+        <div className="dashboard-grid">
+          <MarketOverview data={marketData} />
+          <ForecastCard data={forecast} />
+          <PriceChart data={marketData} />
+          <RiskPanel data={risk} />
+          <SentimentPanel data={sentiment} />
+          <ExplainabilityPanel data={explanation} />
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      )}
+    </div>
+  );
 }
 
-export default App
+export default App;
