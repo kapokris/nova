@@ -3,11 +3,15 @@ import numpy as np
 from pathlib import Path
 from sqlalchemy import create_engine
 import xgboost as xgb
+import joblib
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import matplotlib.pyplot as plt
 
 DATABASE_URL = "postgresql://nova_user:nova_pass@localhost:5432/nova_db"
 TEST_SIZE = 30
+
+MODEL_DIR = Path(__file__).resolve().parent.parent / "saved_models"
+MODEL_DIR.mkdir(exist_ok=True)
 
 FEATURE_COLS = [
     'daily_return', 'return_7d', 'return_14d',
@@ -116,6 +120,11 @@ if __name__ == "__main__":
         print(f"Train: {len(train)} rows, Test: {len(test)} rows")
 
         model = train_xgboost(train)
+
+        model_path = MODEL_DIR / f"xgboost_{ticker}.joblib"
+        joblib.dump(model, model_path)
+        print(f"Model saved to {model_path}")
+
         predictions = model.predict(test[FEATURE_COLS])
 
         metrics = evaluate_forecast(test['target'].values, predictions, ticker)
