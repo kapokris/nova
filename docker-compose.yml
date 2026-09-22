@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16
+    container_name: nova_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nova_user
+      POSTGRES_PASSWORD: nova_pass
+      POSTGRES_DB: nova_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - nova_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nova_user -d nova_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: nova_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://nova_user:nova_pass@db:5432/nova_db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ml/saved_models:/ml/saved_models
+      - ./data-pipeline/raw_data:/data-pipeline/raw_data
+
+  frontend:
+    build: ./frontend
+    container_name: nova_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  nova_pgdata:
