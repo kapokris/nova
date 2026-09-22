@@ -8,11 +8,10 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-
-COPY requirements.txt .
+COPY requirements-prod.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
+    pip install --no-cache-dir -r requirements-prod.txt && \
+    pip install --no-cache-dir --no-deps xgboost==3.4.1
 
 COPY . .
 
